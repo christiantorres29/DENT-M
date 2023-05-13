@@ -15,7 +15,7 @@ using Primer_proyecto_04_02;
 
 namespace proyect
 {
-     class Program
+    class Program
     {
         static int ConnCount = 0;
         // Set the SSID & Password to your local Wifi network
@@ -23,8 +23,10 @@ namespace proyect
         const string MYPASSWORD = "tepercino";
 
         static bool WifiConnected = false;
-        static int I2cBus=0;
-
+        //const int I2cBus = 1;
+        static Aht10 aht10;
+        static Ssd1306 oled;
+        static int I2cBus = 0;
 
         public static void i2conf(int bus, int sda, int sdb)
         {
@@ -33,26 +35,38 @@ namespace proyect
             I2cBus = bus;
         }
 
-        public static Aht10 ahtconf()
-        {
-            I2cConnectionSettings i2cSettings = new(I2cBus, Aht10.DefaultI2cAddress);
-            I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
-            Aht10 sensor = new Aht10(i2cDevice);
-            return sensor;
-        }
+        //public static Aht10 ahtconf()
+        //{
+        //    I2cConnectionSettings i2cSettings = new(I2cBus, Aht10.DefaultI2cAddress);
+        //    I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
+        //    Aht10 aht10 = new Aht10(i2cDevice);
+        //    return aht10;
+        //}
 
-        public static Ssd1306 oledconf()
-        {
-            using Ssd1306 device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
-            device.ClearScreen();
-            device.Font = new BasicFont();
-            return device;
-        }
+        //public static Ssd1306 oledconf()
+        //{
+        //    I2cConnectionSettings i2cSettings = new I2cConnectionSettings(I2cBus, Ssd1306.DefaultI2cAddress);
+        //    I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
+        //    using Ssd1306 device = new Ssd1306(i2cDevice, Ssd13xx.DisplayResolution.OLED128x64);
+        //    device.ClearScreen();
+        //    device.Font = new BasicFont();
+        //    return device;
+        //}
         static void Main(string[] args)
         {
             i2conf(1, 21, 22);
-            Aht10 aht10 = ahtconf();
-            Ssd1306 oled = oledconf();
+            //aht10=ahtconf();
+            I2cConnectionSettings i2cSettings = new(I2cBus, Aht10.DefaultI2cAddress);
+            I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
+            Aht10 aht10 = new Aht10(i2cDevice);
+
+            //oledconf();
+            I2cConnectionSettings i2cSettings_ = new I2cConnectionSettings(I2cBus, Ssd1306.DefaultI2cAddress);
+            I2cDevice i2cDevice_ = I2cDevice.Create(i2cSettings_);
+            using Ssd1306 oled = new Ssd1306(i2cDevice, Ssd13xx.DisplayResolution.OLED128x64);
+            oled.ClearScreen();
+            oled.Font = new BasicFont();
+
             Console.WriteLine($"{aht10.GetTemperature().DegreesCelsius:F1}°C, {aht10.GetHumidity().Percent:F0}%");
             string textTemp = $"temp: {aht10.GetTemperature().DegreesCelsius:F1}C";
             string textHum = $"hum: {aht10.GetHumidity().Percent:F0}%";
