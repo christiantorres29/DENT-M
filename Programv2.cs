@@ -15,7 +15,7 @@ using Primer_proyecto_04_02;
 
 namespace proyect
 {
-    class Program
+    Public class Program
     {
         static int ConnCount = 0;
         // Set the SSID & Password to your local Wifi network
