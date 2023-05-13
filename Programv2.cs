@@ -15,7 +15,7 @@ using Primer_proyecto_04_02;
 
 namespace proyect
 {
-    Public class Program
+     class Program
     {
         static int ConnCount = 0;
         // Set the SSID & Password to your local Wifi network
@@ -23,25 +23,25 @@ namespace proyect
         const string MYPASSWORD = "tepercino";
 
         static bool WifiConnected = false;
-        const int I2Cbus;
+        static int I2cBus=0;
 
 
-        private static void i2conf(int bus, int sda, int sdb)
+        public static void i2conf(int bus, int sda, int sdb)
         {
             Configuration.SetPinFunction(sda, DeviceFunction.I2C1_DATA);
             Configuration.SetPinFunction(sdb, DeviceFunction.I2C1_CLOCK);
             I2cBus = bus;
         }
 
-        private static void ahtconf()
+        public static Aht10 ahtconf()
         {
             I2cConnectionSettings i2cSettings = new(I2cBus, Aht10.DefaultI2cAddress);
             I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
             Aht10 sensor = new Aht10(i2cDevice);
-            return Aht10;
+            return sensor;
         }
 
-        private static void oledconf()
+        public static Ssd1306 oledconf()
         {
             using Ssd1306 device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
             device.ClearScreen();
@@ -50,12 +50,12 @@ namespace proyect
         }
         static void Main(string[] args)
         {
-            i2conf(1,21,22);
-            Aht10 = ahtconf();
-            oled = oledconf();
-            Console.WriteLine($"{sensor.GetTemperature().DegreesCelsius:F1}°C, {sensor.GetHumidity().Percent:F0}%");
-            string textTemp = $"temp: {sensor.GetTemperature().DegreesCelsius:F1}C";
-            string textHum = $"hum: {sensor.GetHumidity().Percent:F0}%";
+            i2conf(1, 21, 22);
+            Aht10 aht10 = ahtconf();
+            Ssd1306 oled = oledconf();
+            Console.WriteLine($"{aht10.GetTemperature().DegreesCelsius:F1}°C, {aht10.GetHumidity().Percent:F0}%");
+            string textTemp = $"temp: {aht10.GetTemperature().DegreesCelsius:F1}C";
+            string textHum = $"hum: {aht10.GetHumidity().Percent:F0}%";
             string tiempo = $":{DateTime.UtcNow}";
             Debug.WriteLine(tiempo.Length.ToString());
             string fecha = tiempo.Substring(1, 11);
@@ -127,8 +127,8 @@ namespace proyect
                     Connection.Close();
                 }
                 // -----------------------------------------------------------
-                textTemp = $"temp: {sensor.GetTemperature().DegreesCelsius:F1}C";
-                textHum = $"hum: {sensor.GetHumidity().Percent:F0}%";
+                textTemp = $"temp: {aht10.GetTemperature().DegreesCelsius:F1}C";
+                textHum = $"hum: {aht10.GetHumidity().Percent:F0}%";
                 tiempo = $":{DateTime.UtcNow}";
                 fecha = tiempo.Substring(1, 11);
                 hora = tiempo.Substring(12, 8);
@@ -168,20 +168,20 @@ namespace proyect
 
 
         }
-            private static void ProcessRequest(HttpListenerContext Context)
+        private static void ProcessRequest(HttpListenerContext Context)
+        {
+            try
             {
-                try
+                if (Context != null)
                 {
-                    if (Context != null)
+                    if (Context.Request != null)
                     {
-                        if (Context.Request != null)
+                        Console.WriteLine(Context.Request.RawUrl);
+                        Console.WriteLine(Context.Request.HttpMethod);
+                        foreach (string item in Context.Request.Headers.AllKeys)
                         {
-                            Console.WriteLine(Context.Request.RawUrl);
-                            Console.WriteLine(Context.Request.HttpMethod);
-                            foreach (string item in Context.Request.Headers.AllKeys)
-                            {
-                                Console.WriteLine(item + " : " + Context.Request.Headers[item]);
-                            }
+                            Console.WriteLine(item + " : " + Context.Request.Headers[item]);
+                        }
                         if (Context.Request.HttpMethod == "GET")
                         {
                             switch (Context.Request.RawUrl)
@@ -189,7 +189,7 @@ namespace proyect
                                 case "/":
                                     if (Context.Response != null)
                                     {
-                                        
+
 
                                         //string Respuesta = "<HTML><BODY>Hola Mundo, Respuesta HTTP desde NanoFrameWork " + DateTime.UtcNow.ToString() + ".</BODY></HTML>";
                                         string Respuesta = Resource1.GetString(Resource1.StringResources.PaginaHome);
@@ -224,100 +224,100 @@ namespace proyect
                                     }
                                     break;
                             }
-                             }
                         }
-
-                        Context.Close();
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
+
+                    Context.Close();
                 }
             }
-        
-            private static void ProcessRequest(Socket Connection, int Count)
+            catch (Exception ex)
             {
-                try
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        private static void ProcessRequest(Socket Connection, int Count)
+        {
+            try
+            {
+                if (Connection != null)
                 {
-                    if (Connection != null)
+                    Console.WriteLine(DateTime.UtcNow.ToString() + " | New Socket Connection from: " + Connection.RemoteEndPoint.ToString() + ", Local: " + Connection.LocalEndPoint.ToString());
+                    Connection.Send(UTF8Encoding.UTF8.GetBytes("Hola Mundo\n"));
+                    //Thread.Sleep(1000);
+                    Connection.Close();
+                    Console.WriteLine("Socket de Conexion " + Count + " Finalizado");
+                    Thread.Sleep(10000);
+                    Console.WriteLine("Hilo de Conexion " + Count + " Finalizado");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        private static void NetworkChange_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e)
+        {
+            if (e.IsAvailable)
+            {
+                Console.WriteLine("Network Connection Ready");
+            }
+            else
+            {
+                Console.WriteLine("Network Connection Lost");
+            }
+        }
+
+        private static void NetworkChange_NetworkAddressChanged(object sender, EventArgs e)
+        {
+            NetworkInterface[] Interfaces = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (NetworkInterface intf in Interfaces)
+            {
+                Console.WriteLine("Interface: " + intf.NetworkInterfaceType + ", IP Address: " + intf.IPv4Address.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Event handler for when Wifi scan completes
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void Wifi_AvailableNetworksChanged(WifiAdapter sender, object e)
+        {
+            Debug.WriteLine("Wifi_AvailableNetworksChanged - get report");
+
+            // Get Report of all scanned Wifi networks
+            WifiNetworkReport report = sender.NetworkReport;
+
+            // Enumerate though networks looking for our network
+            foreach (WifiAvailableNetwork net in report.AvailableNetworks)
+            {
+                // Show all networks found
+                Debug.WriteLine($"Net SSID :{net.Ssid},  BSSID : {net.Bsid},  rssi : {net.NetworkRssiInDecibelMilliwatts.ToString()},  signal : {net.SignalBars.ToString()}");
+
+                // If its our Network then try to connect
+                if (net.Ssid == MYSSID)
+                {
+                    // Disconnect in case we are already connected
+                    sender.Disconnect();
+
+                    // Connect to network
+                    WifiConnectionResult result = sender.Connect(net, WifiReconnectionKind.Automatic, MYPASSWORD);
+
+                    // Display status
+                    if (result.ConnectionStatus == WifiConnectionStatus.Success)
                     {
-                        Console.WriteLine(DateTime.UtcNow.ToString() + " | New Socket Connection from: " + Connection.RemoteEndPoint.ToString() + ", Local: " + Connection.LocalEndPoint.ToString());
-                        Connection.Send(UTF8Encoding.UTF8.GetBytes("Hola Mundo\n"));
-                        //Thread.Sleep(1000);
-                        Connection.Close();
-                        Console.WriteLine("Socket de Conexion " + Count + " Finalizado");
-                        Thread.Sleep(10000);
-                        Console.WriteLine("Hilo de Conexion " + Count + " Finalizado");
+                        Debug.WriteLine("Connected to Wifi network");
+                        WifiConnected = true;
+                        break;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
-                }
-            }
-
-            private static void NetworkChange_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e)
-            {
-                if (e.IsAvailable)
-                {
-                    Console.WriteLine("Network Connection Ready");
-                }
-                else
-                {
-                    Console.WriteLine("Network Connection Lost");
-                }
-            }
-
-            private static void NetworkChange_NetworkAddressChanged(object sender, EventArgs e)
-            {
-                NetworkInterface[] Interfaces = NetworkInterface.GetAllNetworkInterfaces();
-                foreach (NetworkInterface intf in Interfaces)
-                {
-                    Console.WriteLine("Interface: " + intf.NetworkInterfaceType + ", IP Address: " + intf.IPv4Address.ToString());
-                }
-            }
-
-            /// <summary>
-            /// Event handler for when Wifi scan completes
-            /// </summary>
-            /// <param name="sender"></param>
-            /// <param name="e"></param>
-            private static void Wifi_AvailableNetworksChanged(WifiAdapter sender, object e)
-            {
-                Debug.WriteLine("Wifi_AvailableNetworksChanged - get report");
-
-                // Get Report of all scanned Wifi networks
-                WifiNetworkReport report = sender.NetworkReport;
-
-                // Enumerate though networks looking for our network
-                foreach (WifiAvailableNetwork net in report.AvailableNetworks)
-                {
-                    // Show all networks found
-                    Debug.WriteLine($"Net SSID :{net.Ssid},  BSSID : {net.Bsid},  rssi : {net.NetworkRssiInDecibelMilliwatts.ToString()},  signal : {net.SignalBars.ToString()}");
-
-                    // If its our Network then try to connect
-                    if (net.Ssid == MYSSID)
+                    else
                     {
-                        // Disconnect in case we are already connected
-                        sender.Disconnect();
-
-                        // Connect to network
-                        WifiConnectionResult result = sender.Connect(net, WifiReconnectionKind.Automatic, MYPASSWORD);
-
-                        // Display status
-                        if (result.ConnectionStatus == WifiConnectionStatus.Success)
-                        {
-                            Debug.WriteLine("Connected to Wifi network");
-                            WifiConnected = true;
-                            break;
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"Error {result.ConnectionStatus.ToString()} connecting o Wifi network");
-                        }
+                        Debug.WriteLine($"Error {result.ConnectionStatus.ToString()} connecting o Wifi network");
                     }
                 }
             }
         }
     }
+}
