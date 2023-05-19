@@ -39,6 +39,30 @@ namespace proyect
             I2cBus = bus;
         }
 
+        public static void aht10_conf()
+        {
+            I2cConnectionSettings i2cSettings = new(I2cBus, Aht10.DefaultI2cAddress);
+            I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
+            Aht10 aht10_ = new Aht10(i2cDevice);
+            aht10 = aht10_;
+        }
+        public static void oled_conf()
+        {
+            I2cConnectionSettings i2cSettings_ = new I2cConnectionSettings(I2cBus, Ssd1306.DefaultI2cAddress);
+            I2cDevice i2cDevice_ = I2cDevice.Create(i2cSettings_);
+            Ssd1306 oled_ = new Ssd1306(i2cDevice_, Ssd13xx.DisplayResolution.OLED128x64);
+            oled = oled_;
+            oled.ClearScreen();
+            oled.Font = new BasicFont();
+        }
+        public static void rtc_conf()
+        {
+            I2cConnectionSettings settings = new I2cConnectionSettings(1, Ds1307.DefaultI2cAddress);
+            I2cDevice device = I2cDevice.Create(settings);
+            Ds1307 rtc_ = new Ds1307(device);
+            //rtc_.DateTime = new DateTime(2023, 5, 19, 4, 38, 30);
+            rtc = rtc_;
+        }
         static void Main(string[] args)
         {
             //gpioControl = new GpioController();
@@ -48,24 +72,10 @@ namespace proyect
             //gpioControl.RegisterCallbackForPinValueChangedEvent(0, PinEventTypes.Falling, Button_ValueChanged);
 
             i2conf(1, 21, 22);
-            I2cConnectionSettings i2cSettings = new(I2cBus, Aht10.DefaultI2cAddress);
-            I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
-            Aht10 aht10_ = new Aht10(i2cDevice);
-            aht10 = aht10_;
+            aht10_conf();
+            oled_conf();
+            rtc_conf();
 
-            I2cConnectionSettings i2cSettings_ = new I2cConnectionSettings(I2cBus, Ssd1306.DefaultI2cAddress);
-            I2cDevice i2cDevice_ = I2cDevice.Create(i2cSettings_);
-            using Ssd1306 oled_ = new Ssd1306(i2cDevice_, Ssd13xx.DisplayResolution.OLED128x64);
-            oled_.ClearScreen();
-            oled_.Font = new BasicFont();
-            oled = oled_;
-
-            I2cConnectionSettings settings = new I2cConnectionSettings(1, Ds1307.DefaultI2cAddress);
-            I2cDevice device = I2cDevice.Create(settings);
-            Ds1307 rtc_ = new Ds1307(device);
-            //rtc_.DateTime = new DateTime(2023, 5, 19, 4, 38, 30);
-            rtc = rtc_;
-            // new Thread(display_oled(aht10, oled, rtc)).Start();
             new Thread(display_oled).Start();
 
             try
@@ -87,12 +97,12 @@ namespace proyect
                 {
                     try
                     {
-                        Debug.WriteLine("starting Wi-Fi scan");
+                        Console.WriteLine("starting Wi-Fi scan");
                         wifi.ScanAsync();
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Failure starting a scan operation: {ex}");
+                        Console.WriteLine($"Failure starting a scan operation: {ex}");
                     }
 
                     Thread.Sleep(30000);
@@ -100,8 +110,8 @@ namespace proyect
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("message:" + ex.Message);
-                Debug.WriteLine("stack:" + ex.StackTrace);
+                Console.WriteLine("message:" + ex.Message);
+                Console.WriteLine("stack:" + ex.StackTrace);
             }
 
             HttpListener Listener = new HttpListener("http", 80);
@@ -115,18 +125,7 @@ namespace proyect
 
             while (true)
             {
-                string textTemp = $"temp: {aht10.GetTemperature().DegreesCelsius:F1}C";
-                string textHum = $"hum: {aht10.GetHumidity().Percent:F0}%";
-                DateTime dt = rtc.DateTime;
-                string time = dt.ToString("yyyy/MM/dd HH:mm:ss");
-                string fecha = time.Substring(0, 11);
-                string hora = time.Substring(11, 8);
-                oled.Write(0, 0, textTemp, 1, false);
-                oled.Write(0, 1, textHum, 1, false);
-                oled.Write(0, 2, "fecha-hora", 1, false);
-                oled.Write(0, 3, fecha, 1, false);
-                oled.Write(0, 4, hora, 1, false);
-                oled.Display();
+
                 Socket Connection = Server.Accept();
                 ConnCount++;
                 new Thread(() => ProcessRequest(Connection, ConnCount)).Start();
@@ -258,15 +257,10 @@ namespace proyect
             }
         }
 
-        /// <summary>
-        /// Event handler for when Wifi scan completes
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private static void Wifi_AvailableNetworksChanged(WifiAdapter sender, object e)
         {
-            Debug.WriteLine("Wifi_AvailableNetworksChanged - get report");
-
+            Console.WriteLine("Wifi_AvailableNetworksChanged - get report");
+            
             // Get Report of all scanned Wifi networks
             WifiNetworkReport report = sender.NetworkReport;
 
@@ -274,7 +268,7 @@ namespace proyect
             foreach (WifiAvailableNetwork net in report.AvailableNetworks)
             {
                 // Show all networks found
-                Debug.WriteLine($"Net SSID :{net.Ssid},  BSSID : {net.Bsid},  rssi : {net.NetworkRssiInDecibelMilliwatts.ToString()},  signal : {net.SignalBars.ToString()}");
+                Console.WriteLine($"Net SSID :{net.Ssid},  BSSID : {net.Bsid},  rssi : {net.NetworkRssiInDecibelMilliwatts.ToString()},  signal : {net.SignalBars.ToString()}");
 
                 // If its our Network then try to connect
                 if (net.Ssid == MYSSID)
@@ -288,13 +282,13 @@ namespace proyect
                     // Display status
                     if (result.ConnectionStatus == WifiConnectionStatus.Success)
                     {
-                        Debug.WriteLine("Connected to Wifi network");
+                        Console.WriteLine("Connected to Wifi network");
                         WifiConnected = true;
                         break;
                     }
                     else
                     {
-                        Debug.WriteLine($"Error {result.ConnectionStatus.ToString()} connecting o Wifi network");
+                        Console.WriteLine($"Error {result.ConnectionStatus.ToString()} connecting o Wifi network");
                     }
                 }
             }
@@ -315,27 +309,10 @@ namespace proyect
                 oled.Write(0, 3, fecha, 1, false);
                 oled.Write(0, 4, hora, 1, false);
                 oled.Display();
-                Thread.Sleep(100);
+                Thread.Sleep(10);
             }
         }
     }
 
 }
 
-
-//Console.WriteLine($"{aht10.GetTemperature().DegreesCelsius:F1}°C, {aht10.GetHumidity().Percent:F0}%");
-//string textTemp = $"temp: {aht10.GetTemperature().DegreesCelsius:F1}C";
-//string textHum = $"hum: {aht10.GetHumidity().Percent:F0}%";
-//string tiempo = $":{DateTime.UtcNow}";
-//Debug.WriteLine(tiempo.Length.ToString());
-//string fecha = tiempo.Substring(1, 11);
-//string hora = tiempo.Substring(12, 8);
-//Debug.WriteLine(hora);
-//Thread.Sleep(1000);
-//oled.Write(0, 0, textTemp, 1, false);
-//oled.Write(0, 1, textHum, 1, false);
-//oled.Write(0, 2, "fecha-hora", 1, false);
-//oled.Write(0, 3, fecha, 1, false);
-//oled.Write(0, 4, hora, 1, false);
-//oled.Display();
-//Thread.Sleep(1000);
