@@ -1,3 +1,4 @@
+
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -37,8 +38,8 @@ namespace proyect
         // Set the default SSID & Password to your local Wifi network
         //static string SSID = "weathersense";
         //static string PASSWORD = "tepercino";
-        static string SSID = "panita123";
-        static string PASSWORD = "panita123";
+        static string SSID = "Torres";
+        static string PASSWORD = "CLAROI16219";
         static bool saved=false;
         static string ssid=null;
         static string password=null;
@@ -148,7 +149,6 @@ namespace proyect
             {
                 accp = false;
                 oled.ClearScreen();
-                Wireless80211.Disable();
 
                 while (true)
                 {
@@ -165,7 +165,8 @@ namespace proyect
                         {
                             Console.WriteLine("By default");
                         }
-
+                        //Wireless80211.Configure(SSID, PASSWORD);
+                        
                         // Get the first WiFI Adapter
                         WifiAdapter wifi = WifiAdapter.FindAllAdapters()[0];
                         // Set up the AvailableNetworksChanged event to pick up when scan has completed
@@ -196,26 +197,32 @@ namespace proyect
                                 oled.Display();
                             }
 
-                            Thread.Sleep(30000);
+                            Thread.Sleep(10000);
                         }
+                    
                     }
+
                     catch (Exception ex)
                     {
                         Console.WriteLine("message:" + ex.Message);
                         Console.WriteLine("stack:" + ex.StackTrace);
                     }
+                    
 
                     HttpListener Listener = new HttpListener("http", 80);
                     Listener.Start();
 
                     oled.ClearScreen();
                     new Thread(basic_data_display).Start();
+                    HttpListenerContext Request = Listener.GetContext();
+                    new Thread(() => ProcessRequest(Request)).Start();
                     while (true)
                     {
-                        HttpListenerContext Request = Listener.GetContext();
-                        new Thread(() => ProcessRequest(Request)).Start();
+
                     }
+                    
                 }
+            
             }
 
         }
@@ -477,4 +484,6 @@ namespace proyect
     }
 
 }
+
+
 
